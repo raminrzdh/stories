@@ -7,19 +7,32 @@ import { Search, MapPin, Calendar, Users, Building2, Plane, Bus, Train } from "l
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+
+const CITIES = [
+  { name: "تهران", slug: "tehran" },
+  { name: "شیراز", slug: "shiraz" },
+  { name: "مشهد", slug: "mashhad" },
+  { name: "اصفهان", slug: "isfahan" },
+  { name: "کیش", slug: "kish" },
+  { name: "تبریز", slug: "tabriz" },
+  { name: "یزد", slug: "yazd" },
+  { name: "قشم", slug: "qeshm" },
+];
+
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("hotel");
   const [destination, setDestination] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "hotel" && destination) {
-      // Basic slugification for demo
-      const slug = destination.toLowerCase().replace(/\s+/g, "-");
+      const city = CITIES.find(c => c.name === destination.trim() || c.slug === destination.trim().toLowerCase());
+      const slug = city ? city.slug : destination.toLowerCase().replace(/\s+/g, "-");
       router.push(`/رزرو-هتل/${slug}`);
     } else {
-      alert("برای نسخه نمایشی، لطفاً تب هتل را انتخاب و مقصدی (مانند tehran) وارد کنید.");
+      alert("لطفاً مقصدی را انتخاب کنید.");
     }
   };
 
@@ -29,8 +42,8 @@ export default function Home() {
       {/* Navbar (Mock) */}
       <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">H</div>
-          <span className="text-xl font-bold text-blue-900">هتل‌استوری</span>
+          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">H</div>
+          <span className="text-xl font-bold text-blue-900">Trip</span>
         </div>
         <nav className="hidden md:flex gap-6 text-sm font-medium text-gray-600">
           <Link href="#" className="hover:text-blue-600 text-blue-600">خانه</Link>
@@ -99,14 +112,37 @@ export default function Home() {
                   <div className="flex-1 relative">
                     <label className="text-xs text-gray-500 mb-1 block">مقصد (شهر یا هتل)</label>
                     <div className="relative">
-                      <MapPin className="absolute right-3 top-3 text-gray-400 w-5 h-5" />
+                      <MapPin className="absolute right-3 top-3 text-gray-400 w-5 h-5 z-10" />
                       <Input
-                        placeholder="مثلاً: تهران، شیراز..."
+                        placeholder="مقصد (مثلاً: تهران، شیراز)"
                         className="pr-10 h-12 text-base"
                         value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
+                        onChange={(e) => {
+                          setDestination(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                         required
+                        autoComplete="off"
                       />
+                      {showSuggestions && (
+                        <div className="absolute top-14 left-0 right-0 bg-white border rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                          {CITIES.filter(c => c.name.includes(destination) || c.slug.includes(destination.toLowerCase())).map((city) => (
+                            <div
+                              key={city.slug}
+                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between text-sm text-gray-700"
+                              onClick={() => {
+                                setDestination(city.name);
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              <span>{city.name}</span>
+                              <span className="text-gray-400 text-xs">{city.slug}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 

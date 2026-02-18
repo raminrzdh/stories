@@ -92,7 +92,7 @@ export default function StoryViewer({ groups, initialGroupIndex = 0, onClose }: 
 
                 {/* Header */}
                 <div className="absolute top-6 left-0 right-0 z-20 px-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 border border-white flex items-center justify-center text-xs text-white font-bold">
+                    <div className="w-8 h-8 rounded-full bg-red-600 border border-white flex items-center justify-center text-xs text-white font-bold">
                         {currentGroup.title_fa.charAt(0)}
                     </div>
                     <span className="text-white text-sm font-medium drop-shadow-md">{currentGroup.title_fa}</span>

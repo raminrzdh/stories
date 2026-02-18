@@ -122,7 +122,7 @@ export default function GroupDetails() {
                             onChange={(e) => setCaption(e.target.value)}
                         />
                         <StoryBuilder onUpload={handleUpload} />
-                        {uploading && <p className="text-sm text-blue-600 animate-pulse">در حال آپلود...</p>}
+                        {uploading && <p className="text-sm text-red-600 animate-pulse">در حال آپلود...</p>}
                     </CardContent>
                 </Card>
 

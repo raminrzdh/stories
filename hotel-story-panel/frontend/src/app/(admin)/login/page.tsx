@@ -73,7 +73,7 @@ export default function LoginPage() {
                                 {error}
                             </div>
                         )}
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white shadow-md transition-all" disabled={loading}>
                             {loading ? "در حال ورود..." : "ورود"}
                         </Button>
                     </form>

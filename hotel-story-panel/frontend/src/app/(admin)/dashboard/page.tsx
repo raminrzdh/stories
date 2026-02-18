@@ -80,33 +80,35 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6">
-            <Card>
+            <Card className="border-none shadow-lg bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
-                    <CardTitle>ایجاد گروه استوری جدید</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-gray-800">ایجاد گروه استوری جدید</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleCreateGroup} className="flex flex-col md:flex-row gap-4 items-end">
                         <div className="w-full md:w-1/3 space-y-2">
-                            <Label>اسلاگ شهر (انگلیسی)</Label>
+                            <Label className="text-gray-600">اسلاگ شهر (انگلیسی یا فارسی)</Label>
                             <Input
-                                placeholder="tehran"
-                                dir="ltr"
+                                placeholder="tehran یا تهران"
+                                className="bg-white border-gray-200 focus:border-red-500 focus:ring-red-200"
                                 value={newCity}
                                 onChange={(e) => setNewCity(e.target.value)}
                                 required
                             />
+                            <p className="text-[10px] text-gray-400">برای آدرس‌دهی استفاده می‌شود (مثلاً: /رزرو-هتل/تهران)</p>
                         </div>
                         <div className="w-full md:w-1/3 space-y-2">
-                            <Label>عنوان (فارسی)</Label>
+                            <Label className="text-gray-600">عنوان (فارسی)</Label>
                             <Input
                                 placeholder="تخفیف‌های نوروزی"
+                                className="bg-white border-gray-200 focus:border-red-500 focus:ring-red-200"
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 required
                             />
                         </div>
                         <div className="w-full md:w-1/3">
-                            <Button type="submit" className="w-full" disabled={creating}>
+                            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all" disabled={creating}>
                                 {creating ? <Loader2 className="animate-spin ml-2" /> : <PlusCircle className="ml-2" />}
                                 ایجاد گروه
                             </Button>
@@ -117,32 +119,42 @@ export default function Dashboard() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {loading ? (
-                    <p className="col-span-full text-center py-10">در حال بارگذاری...</p>
+                    <p className="col-span-full text-center py-10 text-gray-500 animate-pulse">در حال بارگذاری...</p>
                 ) : groups?.length === 0 ? (
-                    <p className="col-span-full text-center py-10 text-gray-500">هیچ گروه استوری یافت نشد.</p>
+                    <div className="col-span-full text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                        <p className="text-gray-400 text-lg">هنوز هیچ گروه استوری ایجاد نشده است.</p>
+                    </div>
                 ) : (
                     groups.map((group) => (
-                        <Card key={group.id} className="hover:shadow-md transition-shadow">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-lg font-bold">{group.title_fa}</CardTitle>
-                                <div className="flex items-center text-sm text-gray-500">
-                                    <Eye className="h-4 w-4 ml-1" />
-                                    {group.view_count}
+                        <Card key={group.id} className="group hover:shadow-xl transition-all duration-300 border-gray-100 overflow-hidden">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gray-50/50">
+                                <CardTitle className="text-lg font-bold text-gray-800 group-hover:text-red-600 transition-colors">
+                                    {group.title_fa}
+                                </CardTitle>
+                                <div className="flex items-center text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-full shadow-sm">
+                                    <Eye className="h-3 w-3 ml-1 text-blue-500" />
+                                    {group.view_count.toLocaleString('fa-IR')} بازدید
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-sm text-gray-500 mb-4 font-mono dir-ltr text-right">
-                                    /{group.city_slug}
+                            <CardContent className="pt-4">
+                                <div className="text-xs text-gray-400 mb-4 font-mono dir-ltr text-right truncate bg-gray-50 p-2 rounded">
+                                    /hotel-booking/{group.city_slug}
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-2">
                                     <button
                                         onClick={(e) => toggleStatus(group.id, group.active, e)}
-                                        className={`text-xs px-3 py-1 rounded-full border transition-colors ${group.active ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'}`}
+                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 font-medium ${group.active
+                                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                                            }`}
                                     >
-                                        {group.active ? 'فعال' : 'غیرفعال'}
+                                        <div className="flex items-center gap-1">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${group.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                            {group.active ? 'فعال' : 'پیش‌نویس'}
+                                        </div>
                                     </button>
-                                    <Link href={`/dashboard/group/${group.id}`}>
-                                        <Button variant="outline" size="sm">
+                                    <Link href={`/dashboard/group/${group.id}`} className="flex-1">
+                                        <Button variant="outline" size="sm" className="w-full hover:border-red-200 hover:text-red-700 hover:bg-red-50">
                                             مدیریت اسلایدها
                                         </Button>
                                     </Link>
