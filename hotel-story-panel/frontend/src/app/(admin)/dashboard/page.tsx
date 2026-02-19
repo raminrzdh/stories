@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlusCircle, Eye, Loader2 } from "lucide-react";
+import { PlusCircle, Eye, Loader2, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/api";
 
 interface StoryGroup {
@@ -24,6 +34,7 @@ export default function Dashboard() {
     const [newCity, setNewCity] = useState("");
     const [newTitle, setNewTitle] = useState("");
     const [creating, setCreating] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const fetchGroups = async () => {
         try {
@@ -55,6 +66,7 @@ export default function Dashboard() {
             });
             setNewCity("");
             setNewTitle("");
+            setIsDialogOpen(false);
             fetchGroups();
         } catch (err) {
             alert("خطا در ایجاد گروه");
@@ -63,102 +75,134 @@ export default function Dashboard() {
         }
     };
 
-    const toggleStatus = async (id: number, currentStatus: boolean, e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent Link navigation if inside Link (it's not, but good practice)
+    const toggleStatus = async (id: number, currentStatus: boolean) => {
         try {
+            // Optimistic update
+            setGroups(groups.map(g => g.id === id ? { ...g, active: !currentStatus } : g));
+
             await apiRequest(`/groups/${id}/status`, {
                 method: "PATCH",
                 body: JSON.stringify({ active: !currentStatus }),
             });
-            // Optimistic update or refresh
-            setGroups(groups.map(g => g.id === id ? { ...g, active: !currentStatus } : g));
         } catch (err) {
             console.error(err);
             alert("خطا در تغییر وضعیت");
+            // Revert optimistic update on error
+            setGroups(groups.map(g => g.id === id ? { ...g, active: currentStatus } : g));
         }
     };
 
     return (
         <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-gradient-to-br from-white to-gray-50">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-gray-800">ایجاد گروه استوری جدید</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleCreateGroup} className="flex flex-col md:flex-row gap-4 items-end">
-                        <div className="w-full md:w-1/3 space-y-2">
-                            <Label className="text-gray-600">اسلاگ شهر (انگلیسی یا فارسی)</Label>
-                            <Input
-                                placeholder="tehran یا تهران"
-                                className="bg-white border-gray-200 focus:border-red-500 focus:ring-red-200"
-                                value={newCity}
-                                onChange={(e) => setNewCity(e.target.value)}
-                                required
-                            />
-                            <p className="text-[10px] text-gray-400">برای آدرس‌دهی استفاده می‌شود (مثلاً: /رزرو-هتل/تهران)</p>
-                        </div>
-                        <div className="w-full md:w-1/3 space-y-2">
-                            <Label className="text-gray-600">عنوان (فارسی)</Label>
-                            <Input
-                                placeholder="تخفیف‌های نوروزی"
-                                className="bg-white border-gray-200 focus:border-red-500 focus:ring-red-200"
-                                value={newTitle}
-                                onChange={(e) => setNewTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="w-full md:w-1/3">
-                            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all" disabled={creating}>
-                                {creating ? <Loader2 className="animate-spin ml-2" /> : <PlusCircle className="ml-2" />}
-                                ایجاد گروه
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">داشبورد کمپین‌ها</h1>
+                    <p className="text-gray-500 mt-2">مدیریت استوری‌ها و وضعیت نمایش آن‌ها در شهرها</p>
+                </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-100 transition-all hover:scale-105">
+                            <PlusCircle className="ml-2 h-4 w-4" />
+                            گروه استوری جدید
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>ایجاد گروه استوری جدید</DialogTitle>
+                            <DialogDescription>
+                                برای ایجاد یک دسته استوری جدید، نام شهر و عنوان فارسی آن را وارد کنید.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleCreateGroup} className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">اسلاگ شهر (انگلیسی یا فارسی)</Label>
+                                <Input
+                                    placeholder="tehran یا تهران"
+                                    className="bg-white border-gray-300 focus:border-red-500 text-gray-900"
+                                    value={newCity}
+                                    onChange={(e) => setNewCity(e.target.value)}
+                                    required
+                                />
+                                <p className="text-[11px] text-gray-500">لینک صفحه: /رزرو-هتل/{newCity || 'slug'}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">عنوان نمایشی (فارسی)</Label>
+                                <Input
+                                    placeholder="مثلاً: تخفیف‌های نوروزی 1404"
+                                    className="bg-white border-gray-300 focus:border-red-500 text-gray-900"
+                                    value={newTitle}
+                                    onChange={(e) => setNewTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <DialogFooter className="pt-4">
+                                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={creating}>
+                                    {creating ? <Loader2 className="animate-spin ml-2" /> : <PlusCircle className="ml-2" />}
+                                    ایجاد گروه
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {loading ? (
-                    <p className="col-span-full text-center py-10 text-gray-500 animate-pulse">در حال بارگذاری...</p>
+                    <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+                        <Loader2 className="h-10 w-10 animate-spin mb-4" />
+                        <p>در حال بارگذاری اطلاعات...</p>
+                    </div>
                 ) : groups?.length === 0 ? (
-                    <div className="col-span-full text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                        <p className="text-gray-400 text-lg">هنوز هیچ گروه استوری ایجاد نشده است.</p>
+                    <div className="col-span-full text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <PlusCircle className="h-8 w-8 text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">هیچ گروهی یافت نشد</h3>
+                        <p className="text-gray-500 mt-2">اولین گروه استوری خود را ایجاد کنید</p>
                     </div>
                 ) : (
                     groups.map((group) => (
-                        <Card key={group.id} className="group hover:shadow-xl transition-all duration-300 border-gray-100 overflow-hidden">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gray-50/50">
-                                <CardTitle className="text-lg font-bold text-gray-800 group-hover:text-red-600 transition-colors">
-                                    {group.title_fa}
-                                </CardTitle>
-                                <div className="flex items-center text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-full shadow-sm">
-                                    <Eye className="h-3 w-3 ml-1 text-blue-500" />
-                                    {group.view_count.toLocaleString('fa-IR')} بازدید
+                        <Card key={group.id} className="group hover:shadow-xl transition-all duration-300 border-gray-100 overflow-hidden bg-white">
+                            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 border-b border-gray-50 bg-gray-50/30">
+                                <div className="space-y-1">
+                                    <div className="text-xs text-gray-400 font-mono tracking-wider">#{group.id}</div>
+                                    <CardTitle className="text-base font-bold text-gray-800 line-clamp-1 group-hover:text-red-600 transition-colors">
+                                        {group.title_fa}
+                                    </CardTitle>
                                 </div>
+                                <Link href={`/dashboard/group/${group.id}/report`}>
+                                    <div className="bg-white p-1.5 rounded-lg shadow-sm border border-gray-100 hover:bg-gray-50 cursor-pointer group/icon transition-colors" title="مشاهده گزارش">
+                                        <BarChart2 className="h-4 w-4 text-gray-400 group-hover/icon:text-blue-600 transition-colors" />
+                                    </div>
+                                </Link>
                             </CardHeader>
-                            <CardContent className="pt-4">
-                                <div className="text-xs text-gray-400 mb-4 font-mono dir-ltr text-right truncate bg-gray-50 p-2 rounded">
+                            <CardContent className="pt-4 space-y-4">
+                                <div className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded px-2 py-1 font-mono dir-ltr text-right truncate">
                                     /hotel-booking/{group.city_slug}
                                 </div>
-                                <div className="flex justify-between items-center gap-2">
-                                    <button
-                                        onClick={(e) => toggleStatus(group.id, group.active, e)}
-                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 font-medium ${group.active
-                                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                                                : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${group.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                            {group.active ? 'فعال' : 'پیش‌نویس'}
-                                        </div>
-                                    </button>
-                                    <Link href={`/dashboard/group/${group.id}`} className="flex-1">
-                                        <Button variant="outline" size="sm" className="w-full hover:border-red-200 hover:text-red-700 hover:bg-red-50">
-                                            مدیریت اسلایدها
-                                        </Button>
-                                    </Link>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">تعداد بازدید:</span>
+                                    <span className="font-bold text-gray-900">{group.view_count.toLocaleString('fa-IR')}</span>
                                 </div>
+
+                                <div className="flex items-center justify-between py-2 border-t border-b border-dashed border-gray-100">
+                                    <Label htmlFor={`status-${group.id}`} className="text-sm text-gray-600 cursor-pointer">
+                                        وضعیت انتشار
+                                    </Label>
+                                    <Switch
+                                        id={`status-${group.id}`}
+                                        checked={group.active}
+                                        onCheckedChange={() => toggleStatus(group.id, group.active)}
+                                    />
+                                </div>
+
+                                <Link href={`/dashboard/group/${group.id}`} className="block mt-4">
+                                    <Button className="w-full justify-center bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-100 transition-all hover:shadow-lg hover:-translate-y-0.5">
+                                        مدیریت اسلایدها
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
                             </CardContent>
                         </Card>
                     ))
@@ -167,3 +211,6 @@ export default function Dashboard() {
         </div>
     );
 }
+
+// Icon import helper
+import { ArrowLeft, BarChart2 } from "lucide-react";

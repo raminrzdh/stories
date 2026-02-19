@@ -9,6 +9,7 @@ interface Slide {
     id: number;
     image_url: string;
     caption_fa: string;
+    elements?: any; // JSON string or object
     sort_order: number;
 }
 
@@ -31,7 +32,7 @@ export default function StoryViewer({ groups, initialGroupIndex = 0, onClose }: 
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
     const currentGroup = groups[currentGroupIndex];
-    const currentSlide = currentGroup?.slides[currentSlideIndex];
+    const currentSlide = currentGroup?.slides?.[currentSlideIndex];
 
     useEffect(() => {
         // Auto-advance
@@ -112,10 +113,71 @@ export default function StoryViewer({ groups, initialGroupIndex = 0, onClose }: 
                     <div className="w-1/3 h-full" onClick={handleNext} />
                 </div>
 
+                {/* Interactive Elements */}
+                <div className="absolute inset-0 z-[60] pointer-events-none">
+                    {(() => {
+                        let elements: any[] = [];
+                        try {
+                            // console.log("Raw elements:", currentSlide.elements);
+                            if (typeof currentSlide.elements === 'string') {
+                                elements = JSON.parse(currentSlide.elements);
+                            } else if (Array.isArray(currentSlide.elements)) {
+                                elements = currentSlide.elements;
+                            } else if (typeof currentSlide.elements === 'object') {
+                                // Handle case where it might be an object but not array (unlikely but possible if single item)
+                                // Or if it's already parsed
+                                elements = Object.values(currentSlide.elements);
+                            }
+                            console.log("Parsed elements:", JSON.stringify(elements));
+                        } catch (e) {
+                            console.error("Failed to parse elements", e);
+                        }
+
+                        return elements.map((el, i) => (
+                            <div
+                                key={i}
+                                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                style={{ left: `${el.x}%`, top: `${el.y}%` }}
+                            >
+                                {el.type === 'link' && (
+                                    <a
+                                        href={el.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-white text-black px-6 py-3 rounded-full font-bold text-sm shadow-xl whitespace-nowrap flex items-center gap-2 hover:scale-105 transition-transform"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {el.text}
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </a>
+                                )}
+                                {el.type === 'slider' && (
+                                    <div
+                                        className="bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow-lg w-56 pointer-events-auto"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-2xl animate-bounce">{el.emoji}</span>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                className="w-full mx-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+                                                onTouchStart={(e) => e.stopPropagation()}
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ));
+                    })()}
+                </div>
+
                 {/* Caption */}
                 {currentSlide.caption_fa && (
-                    <div className="absolute bottom-10 left-0 right-0 z-20 p-4 text-center">
-                        <p className="text-white text-lg font-bold bg-black/40 inline-block px-4 py-2 rounded-lg backdrop-blur-sm">
+                    <div className="absolute bottom-10 left-0 right-0 z-20 p-4 text-center pointer-events-none">
+                        <p className="text-white text-lg font-bold bg-black/40 inline-block px-4 py-2 rounded-lg backdrop-blur-sm shadow-sm">
                             {currentSlide.caption_fa}
                         </p>
                     </div>

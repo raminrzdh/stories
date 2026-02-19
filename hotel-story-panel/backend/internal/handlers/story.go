@@ -1,15 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"hotel-story-panel/backend/internal/database"
 	"hotel-story-panel/backend/internal/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 // --- Groups ---
@@ -58,7 +60,7 @@ func CreateGroup(c *gin.Context) {
 
 	query := `INSERT INTO story_groups (city_slug, title_fa, short_code, active) 
               VALUES (:city_slug, :title_fa, :short_code, :active) RETURNING id`
-	
+
 	rows, err := database.DB.NamedQuery(query, input)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create group"})
@@ -78,7 +80,7 @@ func CreateGroup(c *gin.Context) {
 func AddSlide(c *gin.Context) {
 	groupID := c.Param("id")
 	caption := c.PostForm("caption_fa")
-    
+
 	// Image Upload
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -103,17 +105,24 @@ func AddSlide(c *gin.Context) {
 	// For MVP, serving static files directly. In prod, use S3/R2.
 	imageURL := "/uploads/" + filename
 
+	elements := c.PostForm("elements")
+	fmt.Println("DEBUG ELEMENTS:", elements)
+	if elements == "" {
+		elements = "[]"
+	}
+
 	slide := models.StorySlide{
 		GroupID:   0, // set below
 		ImageURL:  imageURL,
 		CaptionFa: caption,
+		Elements:  json.RawMessage(elements),
 	}
-    // Parse groupID to int
-    fmt.Sscanf(groupID, "%d", &slide.GroupID)
+	// Parse groupID to int
+	fmt.Sscanf(groupID, "%d", &slide.GroupID)
 
-	query := `INSERT INTO story_slides (group_id, image_url, caption_fa) 
-              VALUES (:group_id, :image_url, :caption_fa) RETURNING id`
-    
+	query := `INSERT INTO story_slides (group_id, image_url, caption_fa, elements) 
+              VALUES (:group_id, :image_url, :caption_fa, :elements) RETURNING id`
+
 	rows, err := database.DB.NamedQuery(query, slide)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add slide"})
@@ -121,9 +130,9 @@ func AddSlide(c *gin.Context) {
 	}
 	defer rows.Close()
 
-    if rows.Next() {
-        rows.Scan(&slide.ID)
-    }
+	if rows.Next() {
+		rows.Scan(&slide.ID)
+	}
 
 	c.JSON(http.StatusCreated, slide)
 }
@@ -134,28 +143,35 @@ func GetPublicStories(c *gin.Context) {
 	citySlug := c.Param("city_slug")
 
 	var groups []models.StoryGroup
+	fmt.Println("DEBUG: GetPublicStories for city:", citySlug)
 	err := database.DB.Select(&groups, "SELECT * FROM story_groups WHERE city_slug = $1 AND active = TRUE", citySlug)
 	if err != nil {
+		fmt.Println("DEBUG: DB Error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
 
+	validGroups := []models.StoryGroup{}
 	for i := range groups {
-		var slides []models.StorySlide
+		slides := []models.StorySlide{} // Initialize as empty slice
 		_ = database.DB.Select(&slides, "SELECT * FROM story_slides WHERE group_id = $1 ORDER BY sort_order ASC", groups[i].ID)
 		groups[i].Slides = slides
-	}
-    
-    // Increment view count for the group (async/fire-and-forget for MVP)
-    if len(groups) > 0 {
-         go func() {
-             for _, g := range groups {
-                 database.DB.Exec("UPDATE story_groups SET view_count = view_count + 1 WHERE id = $1", g.ID)
-             }
-         }()
-    }
 
-	c.JSON(http.StatusOK, groups)
+		if len(slides) > 0 {
+			validGroups = append(validGroups, groups[i])
+		}
+	}
+
+	// Increment view count for the group (async/fire-and-forget for MVP)
+	if len(validGroups) > 0 {
+		go func() {
+			for _, g := range validGroups {
+				database.DB.Exec("UPDATE story_groups SET view_count = view_count + 1 WHERE id = $1", g.ID)
+			}
+		}()
+	}
+
+	c.JSON(http.StatusOK, validGroups)
 }
 
 func IncrementSlideOpen(c *gin.Context) {
@@ -166,6 +182,7 @@ func IncrementSlideOpen(c *gin.Context) {
 	}()
 	c.Status(http.StatusOK)
 }
+
 // --- Management ---
 
 func ToggleGroupStatus(c *gin.Context) {
@@ -184,7 +201,7 @@ func ToggleGroupStatus(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func DeleteSlide(c *gin.Context) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Trash2, Pencil } from "lucide-react";
+import { ArrowRight, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +40,13 @@ export default function GroupDetails() {
         fetchSlides();
     }, [id]);
 
-    const handleUpload = async (imageBlob: Blob) => {
+    const handleUpload = async (imageBlob: Blob, elements: any[]) => {
         setUploading(true);
         const formData = new FormData();
         formData.append("image", imageBlob, "story.jpg");
         formData.append("caption_fa", caption);
+        formData.append("elements", JSON.stringify(elements)); // Send elements JSON
+        console.log("Uploading elements:", JSON.stringify(elements)); // Debug
 
         try {
             const token = localStorage.getItem("token");
@@ -102,24 +104,27 @@ export default function GroupDetails() {
         <div className="space-y-6">
             <div className="flex items-center gap-4">
                 <Link href="/dashboard">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-4 w-4" />
+                    <Button variant="ghost" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                        <ArrowRight className="h-5 w-5" />
+                        <span>بازگشت به داشبورد</span>
                     </Button>
                 </Link>
-                <h1 className="text-2xl font-bold">مدیریت اسلایدها</h1>
+                <div className="h-6 w-px bg-gray-300 mx-2"></div>
+                <h1 className="text-2xl font-bold text-gray-900">مدیریت اسلایدها</h1>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Builder */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>افزودن اسلاید جدید</CardTitle>
+                        <CardTitle className="text-gray-900">افزودن اسلاید جدید</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Input
                             placeholder="کپشن (اختیاری)..."
                             value={caption}
                             onChange={(e) => setCaption(e.target.value)}
+                            className="bg-white text-gray-900 placeholder:text-gray-400 border-gray-300"
                         />
                         <StoryBuilder onUpload={handleUpload} />
                         {uploading && <p className="text-sm text-red-600 animate-pulse">در حال آپلود...</p>}
@@ -129,7 +134,7 @@ export default function GroupDetails() {
                 {/* List */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>اسلایدهای موجود</CardTitle>
+                        <CardTitle className="text-gray-900">اسلایدهای موجود</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {slides.length === 0 ? (

@@ -65,9 +65,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
+    <html lang="fa" dir="rtl" suppressHydrationWarning className={`${estedad.variable}`}>
       <body
-        className={`${estedad.variable} antialiased font-sans bg-gray-50`}
+        className="antialiased font-sans bg-gray-50 text-gray-900"
       >
         {children}
       </body>

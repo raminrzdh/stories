@@ -22,18 +22,7 @@
   --color-border: var(--border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --primary: #991b1b;
-    /* red-800 */
-    --primary-foreground: #ffffff;
-    --muted: #1f2937;
-    --muted-foreground: #9ca3af;
-    --border: #374151;
-  }
-}
+/* Dark mode removed for MVP to ensure consistent Red/Light branding */
 
 body {
   background: var(--background);

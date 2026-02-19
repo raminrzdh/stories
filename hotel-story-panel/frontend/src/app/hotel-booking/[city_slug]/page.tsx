@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { HotelFilters } from "@/components/hotel-filters";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Mock Data for Hotels
 const MOCK_HOTELS = [
@@ -59,6 +61,7 @@ export default function SearchResults() {
     const { city_slug } = useParams();
     const [stories, setStories] = useState<any[]>([]);
     const [selectedStoryIndex, setSelectedStoryIndex] = useState<number | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
 
     // Use loading state if needed, but for now just fetch
     // const [loadingStories, setLoadingStories] = useState(true);
@@ -96,7 +99,7 @@ export default function SearchResults() {
                 <div className="flex-1 overflow-x-auto no-scrollbar">
                     <div className="bg-gray-100 rounded-full px-4 py-2 text-sm flex items-center gap-2 text-gray-600 border cursor-pointer hover:bg-gray-200 transition whitespace-nowrap w-fit">
                         <MapPin className="w-4 h-4" />
-                        <span className="font-medium text-gray-900">{city_slug}</span>
+                        <span className="font-medium text-gray-900">{decodeURIComponent(city_slug as string)}</span>
                         <span className="text-gray-400">|</span>
                         <span className="text-xs">۵ اسفند - ۸ اسفند (۳ شب)</span>
                     </div>
@@ -129,7 +132,6 @@ export default function SearchResults() {
                 </section>
             )}
 
-            {/* Story Viewer Modal */}
             {selectedStoryIndex !== null && (
                 <StoryViewer
                     groups={stories}
@@ -138,47 +140,25 @@ export default function SearchResults() {
                 />
             )}
 
+
+
+            <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                <DialogContent>
+                    <HotelFilters />
+                    <div className="mt-6">
+                        <Button className="w-full bg-red-600" onClick={() => setShowFilters(false)}>
+                            مشاهده هتل‌ها
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <div className="container mx-auto px-4 py-6 grid lg:grid-cols-4 gap-6">
 
                 {/* Sidebar Filters */}
                 <aside className="hidden lg:block space-y-6">
                     <div className="bg-white p-4 rounded-xl border sticky top-24">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                <Filter className="w-4 h-4" /> فیلترها
-                            </h3>
-                            <button className="text-xs text-blue-600 hover:underline">حذف فیلترها</button>
-                        </div>
-
-                        {/* Price Filter */}
-                        <div className="mb-6">
-                            <label className="text-sm font-medium mb-2 block">بازه قیمتی (هر شب)</label>
-                            <div className="h-2 bg-gray-200 rounded-full mt-2 relative">
-                                <div className="absolute left-0 right-1/3 top-0 bottom-0 bg-red-600 rounded-full"></div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                <span>۰ تومان</span>
-                                <span>۵۰ م تومان</span>
-                            </div>
-                        </div>
-
-                        <hr className="my-4" />
-
-                        {/* Star Rating */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium block">تعداد ستاره</label>
-                            {[5, 4, 3, 2, 1].map(star => (
-                                <div key={star} className="flex items-center space-x-2 space-x-reverse">
-                                    <Checkbox id={`star-${star}`} />
-                                    <Label htmlFor={`star-${star}`} className="text-sm flex items-center gap-1 cursor-pointer">
-                                        {star} ستاره
-                                        <div className="flex">
-                                            {[...Array(star)].map((_, i) => <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />)}
-                                        </div>
-                                    </Label>
-                                </div>
-                            ))}
-                        </div>
+                        <HotelFilters />
                     </div>
                 </aside>
 
@@ -186,10 +166,10 @@ export default function SearchResults() {
                 <main className="lg:col-span-3 space-y-4">
                     <div className="flex items-center justify-between">
                         <h1 className="font-bold text-xl text-gray-900">
-                            هتل‌های {city_slug}
+                            هتل‌های {decodeURIComponent(city_slug as string)}
                             <span className="text-sm font-normal text-gray-500 mr-2">({filteredHotels.length} مورد یافت شد)</span>
                         </h1>
-                        <Button variant="outline" size="sm" className="lg:hidden">
+                        <Button variant="outline" size="sm" className="lg:hidden" onClick={() => setShowFilters(true)}>
                             <SlidersHorizontal className="w-4 h-4 ml-2" />
                             فیلترها
                         </Button>
@@ -260,9 +240,11 @@ export default function SearchResults() {
                                                     <span className="text-xl font-bold text-gray-900">{hotel.price}</span>
                                                     <span className="text-xs text-gray-500">تومان / شب</span>
                                                 </div>
-                                                <Button className="mt-2 w-full md:w-auto px-6 bg-red-600 hover:bg-blue-700 shadow-sm shadow-blue-200">
-                                                    مشاهده و رزرو
-                                                </Button>
+                                                <Link href={`/hotel-booking/${city_slug}/${hotel.name.replace(/\s+/g, '-')}`}>
+                                                    <Button className="mt-2 w-full md:w-auto px-6 bg-red-600 hover:bg-blue-700 shadow-sm shadow-blue-200">
+                                                        مشاهده و رزرو
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </div>
                                     </div>

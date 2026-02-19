@@ -28,9 +28,12 @@ export default function Home() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "hotel" && destination) {
-      const city = CITIES.find(c => c.name === destination.trim() || c.slug === destination.trim().toLowerCase());
-      const slug = city ? city.slug : destination.toLowerCase().replace(/\s+/g, "-");
-      router.push(`/رزرو-هتل/${slug}`);
+      // Find city if selected from suggestions (exact match)
+      const city = CITIES.find(c => c.name === destination.trim());
+      // Use the city name (Persian) as slug if found, otherwise use input value
+      // The user wants: /رزرو-هتل/تهران
+      const slug = city ? city.name : destination.trim();
+      router.push(`/رزرو-هتل/${slug}?date_from=2026-02-18&date_to=2026-02-19&source=searchBox`); // Adding mock params as per request example
     } else {
       alert("لطفاً مقصدی را انتخاب کنید.");
     }
