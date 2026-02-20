@@ -62,11 +62,11 @@ func GetGroups(c *gin.Context) {
 	groups := []models.StoryGroup{}
 	query := `
 		SELECT 
-			g.id, g.city_slug, g.title_fa, g.caption, g.cover_url, g.short_code, g.active, g.view_count, g.created_at,
+			g.id, g.city_slug, g.title_fa, g.caption, g.cover_url, g.short_code, g.active, g.view_count, g.open_count, g.created_at,
 			COUNT(s.id) as story_count
 		FROM story_groups g
 		LEFT JOIN story_slides s ON s.group_id = g.id
-		GROUP BY g.id, g.city_slug, g.title_fa, g.caption, g.cover_url, g.short_code, g.active, g.view_count, g.created_at
+		GROUP BY g.id, g.city_slug, g.title_fa, g.caption, g.cover_url, g.short_code, g.active, g.view_count, g.open_count, g.created_at
 		ORDER BY g.created_at DESC`
 
 	err := database.DB.Select(&groups, query)
@@ -81,7 +81,13 @@ func GetGroups(c *gin.Context) {
 func GetGroup(c *gin.Context) {
 	id := c.Param("id")
 	var group models.StoryGroup
-	err := database.DB.Get(&group, "SELECT * FROM story_groups WHERE id = $1", id)
+	query := `
+		SELECT 
+			id, city_slug, title_fa, caption, cover_url, short_code, active, view_count, open_count, created_at,
+			(SELECT COUNT(*) FROM story_slides WHERE group_id = story_groups.id) as story_count
+		FROM story_groups 
+		WHERE id = $1`
+	err := database.DB.Get(&group, query, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
@@ -275,9 +281,33 @@ func AddSlide(c *gin.Context) {
 func GetPublicStories(c *gin.Context) {
 	citySlug := c.Param("city_slug")
 
+	// Map English slugs to Persian for DB lookup if needed
+	cityMap := map[string]string{
+		"tehran":  "تهران",
+		"shiraz":  "شیراز",
+		"mashhad": "مشهد",
+		"isfahan": "اصفهان",
+		"kish":    "کیش",
+		"tabriz":  "تبریز",
+		"yazd":    "یزد",
+		"qeshm":   "قشم",
+		"qom":     "قم",
+	}
+
+	if persian, ok := cityMap[citySlug]; ok {
+		citySlug = persian
+	}
+
 	var groups []models.StoryGroup
 	fmt.Println("DEBUG: GetPublicStories for city:", citySlug)
-	err := database.DB.Select(&groups, "SELECT * FROM story_groups WHERE city_slug = $1 AND active = TRUE", citySlug)
+	query := `
+		SELECT 
+			id, city_slug, title_fa, caption, cover_url, short_code, active, view_count, open_count, created_at,
+			(SELECT COUNT(*) FROM story_slides WHERE group_id = story_groups.id) as story_count
+		FROM story_groups 
+		WHERE city_slug = $1 AND active = TRUE`
+
+	err := database.DB.Select(&groups, query, citySlug)
 	if err != nil {
 		fmt.Println("DEBUG: DB Error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -320,6 +350,15 @@ func IncrementSlideOpen(c *gin.Context) {
 	// Async increment
 	go func() {
 		database.DB.Exec("UPDATE story_slides SET open_count = open_count + 1 WHERE id = $1", slideID)
+	}()
+	c.Status(http.StatusOK)
+}
+
+func IncrementGroupOpen(c *gin.Context) {
+	groupID := c.Param("id")
+	// Async increment
+	go func() {
+		database.DB.Exec("UPDATE story_groups SET open_count = open_count + 1 WHERE id = $1", groupID)
 	}()
 	c.Status(http.StatusOK)
 }

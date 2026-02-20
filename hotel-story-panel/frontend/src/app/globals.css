@@ -104,6 +104,15 @@ body {
   color: var(--foreground);
 }
 
+.font-black {
+  font-weight: 500 !important;
+}
+
+button,
+a {
+  cursor: pointer !important;
+}
+
 /* Custom Range Slider for Stories */
 .story-range-input {
   appearance: none;

@@ -21,6 +21,7 @@ func main() {
 		"ALTER TABLE story_slides ADD COLUMN IF NOT EXISTS duration INT DEFAULT 7;",
 		"ALTER TABLE story_slides ADD COLUMN IF NOT EXISTS background_color VARCHAR(50);",
 		"ALTER TABLE story_slides ALTER COLUMN image_url DROP NOT NULL;",
+		"ALTER TABLE story_groups ADD COLUMN IF NOT EXISTS open_count INT DEFAULT 0;",
 	}
 
 	for _, q := range queries {

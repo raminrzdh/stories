@@ -22,6 +22,7 @@ interface GroupDetails {
     title_fa: string;
     active: boolean;
     view_count: number;
+    open_count: number;
     created_at: string;
     slides: Slide[];
 }
@@ -65,7 +66,8 @@ export default function AnalyticsReport() {
     }
 
     const totalOpens = group.slides?.reduce((acc, slide) => acc + slide.open_count, 0) || 0;
-    const engagementRate = group.view_count > 0 ? ((totalOpens / group.view_count) * 100).toFixed(1) : 0;
+    const ctr = group.view_count > 0 ? ((group.open_count / group.view_count) * 100).toFixed(1) : 0;
+    const watchDepth = group.open_count > 0 ? (totalOpens / group.open_count).toFixed(1) : 0;
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-10 font-sans">
@@ -98,10 +100,10 @@ export default function AnalyticsReport() {
                 {/* Metrics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                     {[
-                        { label: "بازدید کل لیست", value: group.view_count, sub: "نمایش در نتایج جستجو", icon: Eye, color: "text-blue-600", bg: "bg-blue-50" },
-                        { label: "مجموع باز شدن‌ها", value: totalOpens, sub: "تعامل مستقیم با اسلاید‌", icon: MousePointerClick, color: "text-red-600", bg: "bg-red-50" },
-                        { label: "نرخ تعامل", value: `٪${engagementRate}`, sub: "نسبت کلیک به نمایش", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
-                        { label: "میانگین زمان", value: "۴.۲ ثانیه", sub: "مدت ماندگاری در استوری", icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+                        { label: "بازدید کل لیست (Impression)", value: group.view_count, sub: "نمایش در نتایج جستجو", icon: Eye, color: "text-blue-600", bg: "bg-blue-50" },
+                        { label: "تعداد باز شدن (CTR)", value: group.open_count, sub: "کلیک روی دایره استوری", icon: MousePointerClick, color: "text-red-600", bg: "bg-red-50" },
+                        { label: "نرخ کلیک (CTR)", value: `٪${ctr}`, sub: "نسبت کلیک به نمایش", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
+                        { label: "عمق تماشا (Avg)", value: `${watchDepth} اسلاید`, sub: "میانگین اسلاید دیده شده", icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
                     ].map((stat, i) => (stat &&
                         <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between mb-4">

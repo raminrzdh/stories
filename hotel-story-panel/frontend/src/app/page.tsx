@@ -176,11 +176,8 @@ export default function Home() {
                 </div>
 
                 {showDatePicker && (
-                  <div className="absolute top-full right-0 mt-2 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 p-4 z-50 animate-in fade-in zoom-in duration-200 overflow-hidden min-w-[320px]">
-                    <div className="mb-4 px-2">
-                      <h3 className="text-sm font-bold text-gray-900 mb-1">انتخاب زمان سفر</h3>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">تقویم شمسی</p>
-                    </div>
+                  <div className="absolute top-full right-0   bg-white rounded-3xl   border border-gray-100 p-4 z-50 animate-in fade-in zoom-in duration-200 overflow-hidden min-w-[320px]">
+
                     <Calendar
                       range
                       value={dateRange}
@@ -207,7 +204,7 @@ export default function Home() {
                             const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                             handleSearch(nights);
                           }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg shadow-red-100 transition-all active:scale-95"
+                          className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg  transition-all active:scale-95"
                         >
                           تایید و جستجو
                         </button>

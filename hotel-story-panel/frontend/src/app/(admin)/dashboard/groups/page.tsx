@@ -369,6 +369,16 @@ export default function GroupsManagement() {
                                         </Link>
                                         <button
                                             onClick={() => {
+                                                setGroupToEdit(group);
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            className="p-2 hover:bg-white text-slate-400 hover:text-slate-900 rounded-xl transition-all"
+                                            title="تنظیمات گروه"
+                                        >
+                                            <Settings size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => {
                                                 setGroupToDelete(group);
                                                 setIsDeleteModalOpen(true);
                                             }}
@@ -377,12 +387,13 @@ export default function GroupsManagement() {
                                         >
                                             <Trash2 size={18} />
                                         </button>
-                                        <button
+                                        <Link
+                                            href={`/dashboard/group/${group.id}/report`}
                                             className="p-2 hover:bg-white text-slate-400 hover:text-blue-600 rounded-xl transition-all"
-                                            title="آمار"
+                                            title="گزارش تحلیلی"
                                         >
                                             <Activity size={18} />
-                                        </button>
+                                        </Link>
                                     </div>
 
                                     <div className="flex items-center px-3 border-r border-slate-200">
@@ -394,16 +405,13 @@ export default function GroupsManagement() {
 
                             {/* Primary Action Button */}
                             <div className="px-5 pb-5">
-                                <button
-                                    onClick={() => {
-                                        setGroupToEdit(group);
-                                        setIsEditModalOpen(true);
-                                    }}
+                                <Link
+                                    href={`/dashboard/group/${group.id}`}
                                     className="w-full bg-slate-900 hover:bg-black text-white py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
                                 >
-                                    <Settings size={16} className="opacity-50" />
-                                    <span>ویرایش گروه</span>
-                                </button>
+                                    <Layers size={16} className="opacity-50" />
+                                    <span>مدیریت اسلایدها</span>
+                                </Link>
                             </div>
                         </div>
                     ))}
@@ -472,12 +480,13 @@ export default function GroupsManagement() {
                                             >
                                                 <Settings size={18} />
                                             </button>
-                                            <button
+                                            <Link
+                                                href={`/dashboard/group/${group.id}/report`}
                                                 className="p-2 bg-white hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all shadow-sm border border-slate-100"
-                                                title="آمار"
+                                                title="گزارش تحلیلی"
                                             >
                                                 <Activity size={18} />
-                                            </button>
+                                            </Link>
                                             <button
                                                 onClick={() => {
                                                     setGroupToDelete(group);
@@ -693,15 +702,20 @@ export default function GroupsManagement() {
                                 <Trash2 size={32} className="text-red-600" />
                             </div>
                             <h2 className="text-2xl font-black text-slate-900">حذف گروه استوری</h2>
-                            <p className="text-slate-400 text-sm font-medium mt-2">
-                                آیا از حذف گروه <strong>«{groupToDelete.title_fa}»</strong> اطمینان دارید؟ این عمل غیرقابل بازگشت است.
-                            </p>
+                            <div className="mt-4 p-4 bg-red-50 rounded-2xl border border-red-100">
+                                <p className="text-red-600 text-sm font-bold">
+                                    {groupToDelete.active
+                                        ? "این گروه در حال حاضر فعال است. برای حذف، ابتدا باید آن را از وضعیت فعال خارج کنید."
+                                        : `آیا از حذف گروه «${groupToDelete.title_fa}» اطمینان دارید؟ این عمل غیرقابل بازگشت است.`
+                                    }
+                                </p>
+                            </div>
                         </div>
                         <div className="p-8 pt-0 flex gap-3">
                             <button
                                 onClick={handleDeleteGroup}
-                                disabled={deleting}
-                                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white py-4 rounded-2xl font-bold transition-all active:scale-95"
+                                disabled={deleting || groupToDelete.active}
+                                className={`flex-1 ${groupToDelete.active ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'} py-4 rounded-2xl font-bold transition-all active:scale-95`}
                             >
                                 {deleting ? 'در حال حذف...' : 'بله، حذف کن'}
                             </button>

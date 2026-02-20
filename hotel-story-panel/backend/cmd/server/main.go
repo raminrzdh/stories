@@ -49,6 +49,7 @@ func main() {
 		{
 			public.GET("/stories/:city_slug", handlers.GetPublicStories)
 			public.POST("/stories/open/:id", handlers.IncrementSlideOpen)
+			public.POST("/stories/group-open/:id", handlers.IncrementGroupOpen)
 		}
 
 		// Protected (Admin)

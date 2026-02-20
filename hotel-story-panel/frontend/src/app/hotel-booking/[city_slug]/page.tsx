@@ -304,21 +304,26 @@ export default function SearchResults() {
                             <div
                                 key={group.id}
                                 className="flex flex-col items-center gap-3 cursor-pointer group shrink-0"
-                                onClick={() => setSelectedStoryIndex(index)}
+                                onClick={() => {
+                                    setSelectedStoryIndex(index);
+                                    // Track group opening (CTR)
+                                    fetch(`http://localhost:8080/api/public/stories/group-open/${group.id}`, { method: 'POST' })
+                                        .catch(err => console.error('Failed to track story opening:', err));
+                                }}
                             >
-                                <div className="p-1 rounded-full border-2 border-red-600 transition-all group-hover:scale-110 group-active:scale-95 shadow-lg shadow-red-50">
+                                <div className="p-1 rounded-full border-2 border-red-600   group-active:scale-95 shadow-lg shadow-red-50">
                                     <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden relative shadow-inner">
                                         {group.cover_url ? (
                                             <img
                                                 src={group.cover_url.startsWith('http') ? group.cover_url : `http://localhost:8080${group.cover_url}`}
                                                 alt={group.title_fa}
-                                                className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-500"
+                                                className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0"
                                             />
                                         ) : (group.slides[0]?.thumbnail_url || group.slides[0]?.image_url) ? (
                                             <img
                                                 src={`http://localhost:8080${group.slides[0]?.thumbnail_url || group.slides[0]?.image_url}`}
                                                 alt={group.title_fa}
-                                                className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-500"
+                                                className="w-full h-full object-cover grayscale-[0.3] "
                                             />
                                         ) : (
                                             <div

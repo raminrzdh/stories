@@ -21,6 +21,7 @@ type StoryGroup struct {
 	ShortCode  string       `db:"short_code" json:"short_code"`
 	Active     bool         `db:"active" json:"active"`
 	ViewCount  int          `db:"view_count" json:"view_count"`
+	OpenCount  int          `db:"open_count" json:"open_count"`
 	CreatedAt  time.Time    `db:"created_at" json:"created_at"`
 	StoryCount int64        `db:"story_count" json:"story_count"`
 	Slides     []StorySlide `db:"-" json:"slides,omitempty"` // populated manually
