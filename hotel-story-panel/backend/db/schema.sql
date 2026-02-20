@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS story_groups (
     id SERIAL PRIMARY KEY,
     city_slug VARCHAR(100) NOT NULL, -- e.g., 'tehran', 'shiraz'
     title_fa VARCHAR(255), -- Persian title, e.g., 'تخفیف‌های تهران'
+    caption VARCHAR(255) DEFAULT '', -- Label under the circle
+    cover_url TEXT DEFAULT '', -- Custom cover image
     short_code VARCHAR(100) UNIQUE NOT NULL, -- e.g., 'tehran-promo-1404'
     active BOOLEAN DEFAULT TRUE,
     view_count INT DEFAULT 0,

@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ChevronRight, ChevronLeft } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import { apiRequest } from "@/lib/api";
+import { X, ExternalLink, ChevronRight, ChevronLeft } from "lucide-react";
 
 interface Slide {
     id: number;
     image_url: string;
     caption_fa: string;
-    elements?: any; // JSON string or object
+    elements?: any;
     sort_order: number;
+    duration?: number;
+    background_color?: string;
 }
 
 interface Group {
@@ -25,25 +25,42 @@ interface StoryViewerProps {
     onClose: () => void;
 }
 
-const API_BASE_URL = "http://localhost:8080"; // For images
+const API_BASE_URL = "http://localhost:8080";
 
 export default function StoryViewer({ groups, initialGroupIndex = 0, onClose }: StoryViewerProps) {
     const [currentGroupIndex, setCurrentGroupIndex] = useState(initialGroupIndex);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const [progress, setProgress] = useState(0);
 
     const currentGroup = groups[currentGroupIndex];
     const currentSlide = currentGroup?.slides?.[currentSlideIndex];
 
     useEffect(() => {
-        // Auto-advance
-        const timer = setTimeout(() => {
-            handleNext();
-        }, 5000);
-        return () => clearTimeout(timer);
+        setProgress(0);
     }, [currentSlideIndex, currentGroupIndex]);
 
     useEffect(() => {
-        // Track open
+        if (!currentSlide) return;
+
+        const duration = (currentSlide.duration || 7) * 1000;
+        const interval = 50;
+        const step = 100 / (duration / interval);
+
+        const timer = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(timer);
+                    handleNext();
+                    return 0;
+                }
+                return prev + step;
+            });
+        }, interval);
+
+        return () => clearInterval(timer);
+    }, [currentSlideIndex, currentGroupIndex]);
+
+    useEffect(() => {
         if (currentSlide) {
             fetch(`${API_BASE_URL}/api/public/stories/open/${currentSlide.id}`, { method: 'POST' });
         }
@@ -71,117 +88,127 @@ export default function StoryViewer({ groups, initialGroupIndex = 0, onClose }: 
 
     if (!currentGroup || !currentSlide) return null;
 
+    const bgStyle = currentSlide.image_url
+        ? { backgroundImage: `url(${API_BASE_URL}${currentSlide.image_url})` }
+        : { backgroundColor: currentSlide.background_color || '#000000' };
+
     return (
-        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-            <button onClick={onClose} className="absolute top-4 right-4 z-50 text-white">
-                <X className="h-8 w-8" />
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center font-sans">
+            <button
+                onClick={onClose}
+                className="absolute top-6 right-6 z-50 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+            >
+                <X size={32} />
             </button>
 
-            <div className="relative w-full h-full md:w-[400px] md:h-[80vh] bg-black md:rounded-xl overflow-hidden shadow-2xl">
-                {/* Progress Bar */}
-                <div className="absolute top-2 left-0 right-0 z-20 flex gap-1 px-2">
+            <div
+                className="relative w-full h-full md:w-[420px] md:h-[85vh] bg-black md:rounded-[40px] overflow-hidden shadow-2xl bg-cover bg-center bg-no-repeat border-4 border-white/5"
+                style={bgStyle}
+            >
+                {/* Progress Indicators */}
+                <div className="absolute top-4 left-0 right-0 z-20 flex gap-1.5 px-4 h-1">
                     {currentGroup.slides.map((s, idx) => (
-                        <div key={s.id} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+                        <div key={s.id} className="h-full flex-1 bg-white/20 rounded-full overflow-hidden">
                             <div
-                                className={`h-full bg-white transition-all duration-300 ${idx < currentSlideIndex ? 'w-full' : idx === currentSlideIndex ? 'animate-progress' : 'w-0'}`}
-                                style={{ width: idx < currentSlideIndex ? '100%' : idx === currentSlideIndex ? 'auto' : '0%' }}
+                                className="h-full bg-white transition-all duration-75 linear shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                                style={{
+                                    width: idx < currentSlideIndex ? '100%' :
+                                        idx === currentSlideIndex ? `${progress}%` : '0%'
+                                }}
                             />
-                            {/* Note: animation needs custom CSS keyframes, simplifying for MVP */}
                         </div>
                     ))}
                 </div>
 
                 {/* Header */}
-                <div className="absolute top-6 left-0 right-0 z-20 px-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-red-600 border border-white flex items-center justify-center text-xs text-white font-bold">
+                <div className="absolute top-8 left-0 right-0 z-20 px-6 flex items-center gap-3" style={{ direction: 'rtl' }}>
+                    <div className="w-9 h-9 rounded-full bg-red-600 border-2 border-white/50 flex items-center justify-center text-sm text-white font-black shadow-lg">
                         {currentGroup.title_fa.charAt(0)}
                     </div>
-                    <span className="text-white text-sm font-medium drop-shadow-md">{currentGroup.title_fa}</span>
+                    <span className="text-white text-base font-black drop-shadow-lg">{currentGroup.title_fa}</span>
                 </div>
 
-                {/* Image */}
-                <img
-                    src={`${API_BASE_URL}${currentSlide.image_url}`}
-                    alt={currentSlide.caption_fa}
-                    className="w-full h-full object-cover"
-                />
-
-                {/* Navigation Overlay */}
+                {/* Navigation Hotspots */}
                 <div className="absolute inset-0 z-10 flex">
-                    <div className="w-1/3 h-full" onClick={handlePrev} />
-                    <div className="w-1/3 h-full" onClick={handleNext} /> {/* Middle tap advances too */}
-                    <div className="w-1/3 h-full" onClick={handleNext} />
+                    <div className="w-1/3 h-full cursor-pointer" onClick={handlePrev} />
+                    <div className="w-2/3 h-full cursor-pointer" onClick={handleNext} />
                 </div>
 
-                {/* Interactive Elements */}
+                {/* Elements Layer */}
                 <div className="absolute inset-0 z-[60] pointer-events-none">
                     {(() => {
                         let elements: any[] = [];
                         try {
-                            // console.log("Raw elements:", currentSlide.elements);
-                            if (typeof currentSlide.elements === 'string') {
-                                elements = JSON.parse(currentSlide.elements);
-                            } else if (Array.isArray(currentSlide.elements)) {
-                                elements = currentSlide.elements;
-                            } else if (typeof currentSlide.elements === 'object') {
-                                // Handle case where it might be an object but not array (unlikely but possible if single item)
-                                // Or if it's already parsed
-                                elements = Object.values(currentSlide.elements);
-                            }
-                            console.log("Parsed elements:", JSON.stringify(elements));
-                        } catch (e) {
-                            console.error("Failed to parse elements", e);
-                        }
+                            if (typeof currentSlide.elements === 'string') elements = JSON.parse(currentSlide.elements);
+                            else if (Array.isArray(currentSlide.elements)) elements = currentSlide.elements;
+                            else if (typeof currentSlide.elements === 'object') elements = Object.values(currentSlide.elements);
+                        } catch (e) { }
 
                         return elements.map((el, i) => (
                             <div
                                 key={i}
                                 className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
-                                style={{ left: `${el.x}%`, top: `${el.y}%` }}
+                                style={{
+                                    left: `${el.x}%`,
+                                    top: `${el.y}%`,
+                                    direction: 'rtl'
+                                }}
                             >
                                 {el.type === 'link' && (
                                     <a
                                         href={el.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="bg-white text-black px-6 py-3 rounded-full font-bold text-sm shadow-xl whitespace-nowrap flex items-center gap-2 hover:scale-105 transition-transform"
                                         onClick={(e) => e.stopPropagation()}
+                                        className="bg-white text-black px-6 py-2.5 rounded-full font-black text-sm shadow-[0_8px_30px_rgb(0,0,0,0.2)] whitespace-nowrap flex items-center gap-2 transition-transform hover:scale-110 active:scale-95 border border-gray-100"
                                     >
                                         {el.text}
-                                        <ChevronLeft className="w-4 h-4" />
+                                        <ExternalLink size={16} strokeWidth={3} />
                                     </a>
                                 )}
                                 {el.type === 'slider' && (
                                     <div
-                                        className="bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow-lg w-56 pointer-events-auto"
+                                        className="bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl shadow-2xl w-56 border border-white/20"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="flex justify-between items-center mb-1">
                                             <span className="text-2xl animate-bounce">{el.emoji}</span>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                className="w-full mx-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
-                                                onTouchStart={(e) => e.stopPropagation()}
-                                                onMouseDown={(e) => e.stopPropagation()}
-                                            />
+                                            <div className="flex-1 mx-3">
+                                                <input
+                                                    type="range"
+                                                    disabled
+                                                    className="w-full h-1.5 bg-gray-200 rounded-full appearance-none accent-red-600"
+                                                    style={{ direction: 'ltr' }}
+                                                />
+                                            </div>
                                         </div>
+                                    </div>
+                                )}
+                                {el.type === 'text' && (
+                                    <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-2xl text-black text-lg font-black whitespace-nowrap border border-white/20 select-none">
+                                        {el.content}
                                     </div>
                                 )}
                             </div>
                         ));
                     })()}
                 </div>
+            </div>
 
-                {/* Caption */}
-                {currentSlide.caption_fa && (
-                    <div className="absolute bottom-10 left-0 right-0 z-20 p-4 text-center pointer-events-none">
-                        <p className="text-white text-lg font-bold bg-black/40 inline-block px-4 py-2 rounded-lg backdrop-blur-sm shadow-sm">
-                            {currentSlide.caption_fa}
-                        </p>
-                    </div>
-                )}
+            {/* Side Navigation for Desktop */}
+            <div className="hidden lg:flex absolute inset-x-0 top-1/2 -translate-y-1/2 justify-between px-20 pointer-events-none">
+                <button
+                    onClick={handlePrev}
+                    className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-full transition-all pointer-events-auto"
+                >
+                    <ChevronRight size={40} />
+                </button>
+                <button
+                    onClick={handleNext}
+                    className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-full transition-all pointer-events-auto"
+                >
+                    <ChevronLeft size={40} />
+                </button>
             </div>
         </div>
     );

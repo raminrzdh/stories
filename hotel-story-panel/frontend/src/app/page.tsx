@@ -1,208 +1,294 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, MapPin, Calendar, Users, Building2, Plane, Bus, Train } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-
-const CITIES = [
-  { name: "تهران", slug: "tehran" },
-  { name: "شیراز", slug: "shiraz" },
-  { name: "مشهد", slug: "mashhad" },
-  { name: "اصفهان", slug: "isfahan" },
-  { name: "کیش", slug: "kish" },
-  { name: "تبریز", slug: "tabriz" },
-  { name: "یزد", slug: "yazd" },
-  { name: "قشم", slug: "qeshm" },
-];
+import { useRouter } from "next/navigation";
+import { Search, MapPin, Calendar as CalendarIcon, Users, ChevronDown, Hotel, Plane, Train, Ship, Car, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Calendar } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+import PassengerPicker from "@/components/passenger-picker";
+import "react-multi-date-picker/styles/layouts/mobile.css";
 
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("hotel");
   const [destination, setDestination] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [dateRange, setDateRange] = useState<any>(null);
+  const [adults, setAdults] = useState(1);
+  const [childrenCount, setChildrenCount] = useState(0);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeTab === "hotel" && destination) {
-      // Find city if selected from suggestions (exact match)
-      const city = CITIES.find(c => c.name === destination.trim());
-      // Use the city name (Persian) as slug if found, otherwise use input value
-      // The user wants: /رزرو-هتل/تهران
-      const slug = city ? city.name : destination.trim();
-      router.push(`/رزرو-هتل/${slug}?date_from=2026-02-18&date_to=2026-02-19&source=searchBox`); // Adding mock params as per request example
-    } else {
-      alert("لطفاً مقصدی را انتخاب کنید.");
+  // UI state for dropdowns
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showPassengerPicker, setShowPassengerPicker] = useState(false);
+
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const passengerPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+      if (passengerPickerRef.current && !passengerPickerRef.current.contains(event.target as Node)) {
+        setShowPassengerPicker(false);
+      }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSearch = (forcedNights?: number) => {
+    const normalizedInput = destination.trim();
+    const citySlug = normalizedInput || "tehran";
+
+    // Format dates for query params (Gregorian YYYY-MM-DD)
+    let dateParams = "";
+    if (dateRange && Array.isArray(dateRange) && dateRange.length >= 2) {
+      const start = dateRange[0].toDate();
+      const end = dateRange[1].toDate();
+
+      const format = (date: Date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+      };
+
+      // Calculate nights if not provided
+      let nights = forcedNights;
+      if (nights === undefined) {
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      dateParams = `?date_from=${format(start)}&date_to=${format(end)}&nights=${nights}`;
+    }
+
+    router.push(`/رزرو-هتل/${citySlug}${dateParams}`);
   };
 
   return (
-    <main className="min-h-screen flex flex-col font-[family-name:var(--font-estedad)] bg-gray-50">
-
-      {/* Navbar (Mock) */}
-      <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">H</div>
-          <span className="text-xl font-bold text-blue-900">Trip</span>
-        </div>
-        <nav className="hidden md:flex gap-6 text-sm font-medium text-gray-600">
-          <Link href="#" className="hover:text-blue-600 text-blue-600">خانه</Link>
-          <Link href="#" className="hover:text-blue-600">بلیط هواپیما</Link>
-          <Link href="#" className="hover:text-blue-600">رزرو هتل</Link>
-          <Link href="#" className="hover:text-blue-600">تور مسافرتی</Link>
-        </nav>
-        <div className="flex gap-3">
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">پنل مدیریت</Button>
-          </Link>
-          <Button size="sm">ورود / ثبت‌نام</Button>
+    <main className="min-h-screen bg-gray-50 font-sans">
+      {/* Navbar */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                H
+              </div>
+              <span className="text-xl font-bold text-gray-900 tracking-tight">Trip</span>
+            </div>
+            <nav className="hidden md:flex gap-6 text-sm font-medium">
+              <Link href="#" className="text-red-600 font-semibold">خانه</Link>
+              <Link href="#" className="text-gray-600 hover:text-red-600 transition-colors">بلیط هواپیما</Link>
+              <Link href="#" className="text-gray-600 hover:text-red-600 transition-colors">رزرو هتل</Link>
+              <Link href="#" className="text-gray-600 hover:text-red-600 transition-colors">تور مسافرتی</Link>
+            </nav>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              پنل مدیریت
+            </Link>
+            <button className="px-5 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm active:scale-95">
+              ورود یا ثبت‌نام
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative h-[500px] flex items-center justify-center bg-gray-900">
-        {/* Background Image */}
-        <div className="absolute inset-0 overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2070&auto=format&fit=crop"
-            alt="Hero Background"
-            className="w-full h-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
-        </div>
+      <section className="relative h-[480px] flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-red-800" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=2080&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-50" />
 
-        {/* Search Widget Container */}
-        <div className="relative z-10 w-full max-w-4xl px-4">
-          <div className="text-center text-white mb-8 space-y-2">
-            <h1 className="text-3xl md:text-5xl font-extrabold drop-shadow-lg">
-              تجربه سفری به‌یادماندنی
-            </h1>
-            <p className="text-lg opacity-90">
-              رزرو آنلاین هتل، بلیط هواپیما و قطار با بهترین قیمت
-            </p>
-          </div>
+        <div className="container mx-auto px-4 relative z-10 text-center">
+          <h1 className="text-4xl md:text-6xl font-black text-white mb-6 drop-shadow-md">
+            سفر رویایی‌تان را همین حالا رزرو کنید
+          </h1>
+          <p className="text-lg md:text-xl text-red-50 mb-12 max-w-2xl mx-auto opacity-90">
+            تضمین کمترین قیمت برای بیش از ۱ میلیون هتل و پرواز در سراسر جهان
+          </p>
 
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Search Widget */}
+          <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl p-2 md:p-3 relative z-20">
             {/* Tabs */}
-            <div className="flex border-b bg-gray-50/50">
+            <div className="flex flex-wrap gap-1 mb-4 bg-gray-50 p-1 rounded-xl">
               {[
-                { id: 'hotel', icon: Building2, label: 'هتل' },
-                { id: 'flight', icon: Plane, label: 'پرواز' },
-                { id: 'train', icon: Train, label: 'قطار' },
-                { id: 'bus', icon: Bus, label: 'اتوبوس' },
+                { id: "hotel", icon: Hotel, label: "رزرو هتل" },
+                { id: "flight", icon: Plane, label: "پرواز" },
+                { id: "train", icon: Train, label: "قطار" },
+                { id: "bus", icon: Car, label: "اتوبوس" },
+                { id: "ship", icon: Ship, label: "کشتی" },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-all
-                                ${activeTab === tab.id
-                      ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:bg-gray-50'}`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100/50"
+                    }`}
                 >
-                  <tab.icon className="w-5 h-5" />
+                  <tab.icon size={18} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                   {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* Search Form */}
-            <div className="p-4 md:p-6 bg-white animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {activeTab === 'hotel' ? (
-                <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <label className="text-xs text-gray-500 mb-1 block">مقصد (شهر یا هتل)</label>
-                    <div className="relative">
-                      <MapPin className="absolute right-3 top-3 text-gray-400 w-5 h-5 z-10" />
-                      <Input
-                        placeholder="مقصد (مثلاً: تهران، شیراز)"
-                        className="pr-10 h-12 text-base"
-                        value={destination}
-                        onChange={(e) => {
-                          setDestination(e.target.value);
-                          setShowSuggestions(true);
-                        }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        required
-                        autoComplete="off"
-                      />
-                      {showSuggestions && (
-                        <div className="absolute top-14 left-0 right-0 bg-white border rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-                          {CITIES.filter(c => c.name.includes(destination) || c.slug.includes(destination.toLowerCase())).map((city) => (
-                            <div
-                              key={city.slug}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between text-sm text-gray-700"
-                              onClick={() => {
-                                setDestination(city.name);
-                                setShowSuggestions(false);
-                              }}
-                            >
-                              <span>{city.name}</span>
-                              <span className="text-gray-400 text-xs">{city.slug}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 relative">
-                    <label className="text-xs text-gray-500 mb-1 block">تاریخ اقامت</label>
-                    <div className="relative">
-                      <Calendar className="absolute right-3 top-3 text-gray-400 w-5 h-5" />
-                      <div className="flex items-center border rounded-md h-12 pr-10 pl-3 bg-gray-50 text-gray-500 text-sm cursor-not-allowed">
-                        ۵ اسفند - ۸ اسفند
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full md:w-32 relative">
-                    <label className="text-xs text-gray-500 mb-1 block">مسافران</label>
-                    <div className="relative">
-                      <Users className="absolute right-3 top-3 text-gray-400 w-5 h-5" />
-                      <div className="flex items-center border rounded-md h-12 pr-10 pl-3 bg-gray-50 text-gray-500 text-sm">
-                        ۲ نفر
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-end">
-                    <Button type="submit" size="lg" className="w-full md:w-auto h-12 px-8 bg-orange-500 hover:bg-orange-600 text-lg shadow-md shadow-orange-200">
-                      جستجو
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <div className="h-24 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-lg bg-gray-50">
-                  این بخش در نسخه نمایشی فعال نیست. لطفاً تب هتل را انتخاب کنید.
+            {/* Inputs */}
+            <div className="flex flex-col md:flex-row items-stretch gap-2">
+              <div className="flex-1 min-w-[240px] relative">
+                <div className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400">
+                  <MapPin size={20} />
                 </div>
-              )}
+                <input
+                  type="text"
+                  placeholder="کجا می‌روید؟ (نام شهر یا هتل)"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  className="w-full h-14 pr-12 pl-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-100 focus:border-red-600 outline-none transition-all text-gray-900 placeholder:text-gray-400 font-bold"
+                />
+              </div>
+
+              <div className="flex-1 min-w-[200px] relative" ref={datePickerRef}>
+                <div className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400">
+                  <CalendarIcon size={20} />
+                </div>
+                <div
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="w-full h-14 pr-12 pl-4 flex items-center justify-between bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <span className={`font-black transition-colors ${dateRange ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {dateRange && dateRange[0] ? (
+                      dateRange[1] ? `${dateRange[0].format("D MMMM")} - ${dateRange[1].format("D MMMM")}`
+                        : dateRange[0].format("D MMMM")
+                    ) : "زمان سفر"}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-300 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                </div>
+
+                {showDatePicker && (
+                  <div className="absolute top-full right-0 mt-2 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 p-4 z-50 animate-in fade-in zoom-in duration-200 overflow-hidden min-w-[320px]">
+                    <div className="mb-4 px-2">
+                      <h3 className="text-sm font-bold text-gray-900 mb-1">انتخاب زمان سفر</h3>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">تقویم شمسی</p>
+                    </div>
+                    <Calendar
+                      range
+                      value={dateRange}
+                      onChange={setDateRange}
+                      calendar={persian}
+                      locale={persian_fa}
+                      className="shamsi-calendar-custom"
+                    />
+                    {dateRange && dateRange[0] && dateRange[1] && (
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between px-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">مدت اقامت</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {(() => {
+                              const diffTime = Math.abs(dateRange[1].toDate().getTime() - dateRange[0].toDate().getTime());
+                              const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              return `${nights} شب`;
+                            })()}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const diffTime = Math.abs(dateRange[1].toDate().getTime() - dateRange[0].toDate().getTime());
+                            const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            handleSearch(nights);
+                          }}
+                          className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg shadow-red-100 transition-all active:scale-95"
+                        >
+                          تایید و جستجو
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-[180px] relative" ref={passengerPickerRef}>
+                <div className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400">
+                  <Users size={20} />
+                </div>
+                <div
+                  onClick={() => setShowPassengerPicker(!showPassengerPicker)}
+                  className="w-full h-14 pr-12 pl-4 flex items-center justify-between bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <span className={`font-bold transition-colors ${adults + childrenCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {adults} بزرگسال، {childrenCount} کودک
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-300 transition-transform ${showPassengerPicker ? 'rotate-180' : ''}`} />
+                </div>
+
+                {showPassengerPicker && (
+                  <PassengerPicker
+                    adults={adults}
+                    childrenCount={childrenCount}
+                    onChange={(a, c) => { setAdults(a); setChildrenCount(c); }}
+                    onClose={() => setShowPassengerPicker(false)}
+                  />
+                )}
+              </div>
+
+              <button
+                onClick={() => handleSearch()}
+                className="h-14 px-10 bg-red-600 hover:bg-red-700 text-white font-black text-lg rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Search size={22} />
+                جستجو
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Section (Mock) */}
-      <section className="py-16 px-6 max-w-7xl mx-auto w-full">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">مقاصد پرطرفدار</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {['کیش', 'مشهد', 'اصفهان', 'شیراز'].map((city, i) => (
-            <div key={city} className="aspect-[4/3] rounded-xl bg-gray-200 relative overflow-hidden group cursor-pointer">
-              <img
-                src={`https://source.unsplash.com/random/400x300?iran,${i}`}
-                className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                alt={city}
-              />
-              <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition" />
-              <span className="absolute bottom-4 right-4 text-white font-bold text-lg drop-shadow-md">{city}</span>
+      {/* Recommended Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h2 className="text-3xl font-black text-gray-900 mb-2">پیشنهادات ویژه</h2>
+            <p className="text-gray-500 font-medium">بهترین هتل‌ها با تخفیف‌های استثنایی</p>
+          </div>
+          <button className="text-red-600 font-bold hover:underline">مشاهده همه</button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { city: "تهران", name: "هتل اسپیناس پالاس", price: "۴,۹۰۰,۰۰۰", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop" },
+            { city: "کیش", name: "هتل ترنج", price: "۷,۲۰۰,۰۰۰", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2070&auto=format&fit=crop" },
+            { city: "مشهد", name: "هتل درویشی", price: "۳,۸۰۰,۰۰۰", img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2070&auto=format&fit=crop" },
+          ].map((hotel, i) => (
+            <div key={i} className="group cursor-pointer">
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 shadow-md bg-gray-200">
+                <img
+                  src={hotel.img}
+                  alt={hotel.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm">
+                  {hotel.city}
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-red-600 transition-colors tracking-tight">{hotel.name}</h3>
+              <div className="flex items-end gap-1">
+                <span className="text-red-600 text-lg font-black">{hotel.price}</span>
+                <span className="text-gray-400 text-xs font-medium pb-1">تومان / هر شب</span>
+              </div>
             </div>
           ))}
         </div>
       </section>
-
     </main>
   );
 }

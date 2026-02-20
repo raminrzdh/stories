@@ -4,7 +4,6 @@
   --background: #ffffff;
   --foreground: #171717;
   --primary: #dc2626;
-  /* red-600 */
   --primary-foreground: #ffffff;
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
@@ -12,19 +11,117 @@
 }
 
 @theme {
-  --font-sans: var(--font-estedad), system-ui, sans-serif;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
+  --font-sans: var(--font-estedad), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-/* Dark mode removed for MVP to ensure consistent Red/Light branding */
+/* Shamsi Calendar Custom Styles - Minimal & Modern */
+.shamsi-calendar-custom.rmdp-border {
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 24px !important;
+}
+
+.shamsi-calendar-custom .rmdp-day span {
+  font-weight: 600 !important;
+  /* Semibold/Bold for numbers */
+  font-family: var(--font-estedad) !important;
+  font-size: 14px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 10px !important;
+}
+
+/* New Minimal Header Styles */
+.shamsi-calendar-custom .rmdp-header-values {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  /* Bold instead of Black */
+  color: #111 !important;
+  letter-spacing: -0.02em;
+  font-family: var(--font-estedad) !important;
+}
+
+.shamsi-calendar-custom .rmdp-week-day {
+  color: #999 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  height: 30px !important;
+}
+
+.shamsi-calendar-custom .rmdp-day.rmdp-range {
+  background-color: #f8fafc !important;
+  color: #ef4444 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.shamsi-calendar-custom .rmdp-day.rmdp-range-start {
+  background-color: #111827 !important;
+  color: white !important;
+  border-radius: 12px 0 0 12px !important;
+  box-shadow: -4px 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.shamsi-calendar-custom .rmdp-day.rmdp-range-end {
+  background-color: #111827 !important;
+  color: white !important;
+  border-radius: 0 12px 12px 0 !important;
+  box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.shamsi-calendar-custom .rmdp-day.rmdp-selected span {
+  background-color: transparent !important;
+}
+
+.shamsi-calendar-custom .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  transform: translateY(-1px);
+}
+
+.shamsi-calendar-custom .rmdp-arrow {
+  border-color: #64748b !important;
+  border-width: 0 2px 2px 0 !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.shamsi-calendar-custom .rmdp-arrow-container {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+  background-color: #f8fafc !important;
+  transition: all 0.2s ease !important;
+}
+
+.shamsi-calendar-custom .rmdp-arrow-container:hover {
+  background-color: #f1f5f9 !important;
+}
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Custom Range Slider for Stories */
+.story-range-input {
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  outline: none;
+  transition: background 0.3s;
+}
+
+.story-range-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border: 2px solid #dc2626;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

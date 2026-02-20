@@ -3,10 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"hotel-story-panel/backend/internal/database"
 	"hotel-story-panel/backend/internal/handlers"
 	"hotel-story-panel/backend/internal/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -51,16 +52,20 @@ func main() {
 		}
 
 		// Protected (Admin)
-		protected := api.Group("/")
-		protected.Use(middleware.AuthMiddleware())
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware())
 		{
-			protected.GET("/groups", handlers.GetGroups)
-			protected.GET("/groups/:id", handlers.GetGroup)
-			protected.POST("/groups", handlers.CreateGroup)
-			protected.POST("/groups/:id/slides", handlers.AddSlide)
-			protected.PATCH("/groups/:id/status", handlers.ToggleGroupStatus)
-			protected.DELETE("/slides/:id", handlers.DeleteSlide)
-			protected.PUT("/slides/:id", handlers.UpdateSlide)
+			admin.GET("/stats", handlers.GetDashboardStats)
+			admin.GET("/story-groups", handlers.GetGroups)
+			admin.GET("/story-groups/:id", handlers.GetGroup)
+			admin.POST("/story-groups", handlers.CreateGroup)
+			admin.PUT("/story-groups/:id", handlers.UpdateGroup)
+			admin.DELETE("/story-groups/:id", handlers.DeleteGroup)
+			admin.POST("/story-groups/:id/stories", handlers.AddSlide)
+			admin.PATCH("/story-groups/:id/status", handlers.ToggleGroupStatus)
+			admin.DELETE("/stories/:id", handlers.DeleteSlide)
+			admin.PUT("/stories/:id", handlers.UpdateSlide)
+			admin.POST("/upload", handlers.UploadImage)
 		}
 	}
 
