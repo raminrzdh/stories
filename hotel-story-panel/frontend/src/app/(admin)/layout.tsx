@@ -83,7 +83,7 @@ export default function AdminLayout({
                             <Layers className="text-white" size={24} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">TRIP</h1>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tight">Trip Story</h1>
                             <div className="text-[10px] font-medium text-slate-400 tracking-[0.2em] uppercase leading-none">Admin Panel</div>
                         </div>
                     </div>
